@@ -174,7 +174,7 @@ Every ingested log is normalized into this standard event structure:
 
 ## 🚀 Implemented Capabilities vs. Future Roadmap
 
-### ✅ Implemented in Prototype (Day 1)
+### ✅ Implemented in Prototype
 - [x] Local Ingestion & Routing Engine (FastAPI)
 - [x] Known Parsers (Cisco IOS %SEC ACLs, Firewall v1 KV, Linux Syslog sshd)
 - [x] Unknown Log Detection & Format Fingerprinting
