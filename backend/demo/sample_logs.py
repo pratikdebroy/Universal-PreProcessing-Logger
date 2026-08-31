@@ -1,0 +1,17 @@
+"""
+Sample Perimeter & Network Device Logs for SIH 26156 Demonstration.
+"""
+
+BASELINE_LOGS = [
+    "<134>Aug 31 21:10:04 router-01 %SEC-6-IPACCESSLOGP: list 101 denied tcp 10.20.1.15(443) -> 172.16.4.20(52144), 1 packet",
+    "2026-08-31T21:11:12Z FW01 ACTION=DENY SRC=192.168.10.25 DST=10.0.0.12 PROTO=TCP SPORT=443 DPORT=22",
+    "Aug 31 21:12:44 gateway01 sshd[2190]: Failed password for admin from 192.168.1.44 port 5212",
+    "<134>Aug 31 21:12:55 router-02 %SEC-6-IPACCESSLOGP: list 102 permitted tcp 192.168.1.50(80) -> 10.0.5.10(58920), 1 packet",
+    "2026-08-31T21:13:00Z FW02 ACTION=ALLOW SRC=10.0.1.15 DST=172.16.0.4 PROTO=UDP SPORT=53 DPORT=53",
+]
+
+UNKNOWN_LOG_EDGEX = "31-08-2026 21:13:04 EDGE-X | SRCIP:172.20.1.50 | DSTIP:10.10.4.8 | P:TCP | DP:3389 | DECISION:BLOCK | BYTES:421"
+
+UNKNOWN_LOG_RTX9 = "[31/08/26 21:14:22] RT-X9 :: source=10.5.4.21 destination=192.168.20.10 protocol=udp destination_port=53 action=drop"
+
+DRIFTED_LOG_FW = "2026-08-31T21:15:00Z FW01 ACT=DENY SRCIP=10.1.1.5 DSTIP=10.1.1.20 P=TCP DP=22"

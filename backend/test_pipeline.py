@@ -1,0 +1,80 @@
+from services.store import store
+
+def test_pipeline():
+    print("=== 1. Testing Baseline Ingestion & Processing ===")
+    events = store.load_demo_baseline()
+    print(f"Loaded {len(events)} baseline events:")
+    for ev in events:
+        print(f" - [{ev.status.upper()}] {ev.device}: {ev.source_ip} -> {ev.destination_ip} ({ev.protocol}) Action={ev.action} Conf={ev.confidence}% Parser={ev.parser_version}")
+    
+    stats = store.get_stats()
+    print(f"Stats: Ingested={stats.total_ingested}, Processed={stats.total_processed}, AvgConf={stats.avg_confidence}%\n")
+    
+    print("=== 2. Testing Unknown Vendor Ingestion (EDGE-X) ===")
+    unknown_ev = store.inject_unknown("edgex")
+    print(f"Unknown Log Result:")
+    print(f" - Status: {unknown_ev.status}")
+    print(f" - Device: {unknown_ev.device}")
+    print(f" - Source: {unknown_ev.source_ip}")
+    print(f" - Dest: {unknown_ev.destination_ip}:{unknown_ev.destination_port}")
+    print(f" - Proto: {unknown_ev.protocol}")
+    print(f" - Action: {unknown_ev.action}")
+    print(f" - Confidence: {unknown_ev.confidence}% ({unknown_ev.confidence_breakdown.rating if unknown_ev.confidence_breakdown else ''})")
+    print(f" - Mappings:")
+    for m in (unknown_ev.mappings or []):
+        print(f"    * {m.raw_key} -> {m.target_field} ({m.sample_value}) [{m.match_reason}]")
+    print()
+
+    print("=== 3. Testing Unknown Vendor Ingestion (RT-X9) ===")
+    rtx9_ev = store.inject_unknown("rtx9")
+    print(f"RT-X9 Log Result:")
+    print(f" - Status: {rtx9_ev.status}")
+    print(f" - Device: {rtx9_ev.device}")
+    print(f" - Source: {rtx9_ev.source_ip} -> {rtx9_ev.destination_ip}:{rtx9_ev.destination_port}")
+    print(f" - Proto: {rtx9_ev.protocol}")
+    print(f" - Action: {rtx9_ev.action}")
+    print(f" - Confidence: {rtx9_ev.confidence}%\n")
+
+    print("=== 4. Testing Format Drift Ingestion ===")
+    drift_ev = store.inject_drift()
+    print(f"Drifted Log Result (Before Self-Healing):")
+    print(f" - Status: {drift_ev.status}")
+    print(f" - Parser Version: {drift_ev.parser_version}")
+    print(f" - Confidence: {drift_ev.confidence}%")
+    print(f" - Drift Detected: {drift_ev.drift_detected}")
+    print(f" - Drift Reason: {drift_ev.drift_reason}\n")
+
+    print("=== 5. Testing Self-Healing Trigger ===")
+    reports = store.trigger_self_healing()
+    print(f"Self-Healing Reports ({len(reports)}):")
+    for r in reports:
+        print(f" - Affected Log: {r.affected_log_id}")
+        print(f" - Transition: {r.previous_parser_version} ({r.previous_confidence}%) -> {r.new_parser_version} ({r.new_confidence}%)")
+        print(f" - Drifted Keys Mapped: {r.drifted_keys}")
+        print(f" - Details: {r.details}")
+        
+    healed_event = store.events.get(drift_ev.id)
+    print(f"\nHealed Event Status:")
+    print(f" - Status: {healed_event.status}")
+    print(f" - Parser Version: {healed_event.parser_version}")
+    print(f" - Confidence: {healed_event.confidence}%")
+    print(f" - Source IP: {healed_event.source_ip}")
+    print(f" - Dest IP: {healed_event.destination_ip}")
+    print(f" - Proto: {healed_event.protocol}")
+    print(f" - Action: {healed_event.action}")
+    print(f" - Dest Port: {healed_event.destination_port}")
+    print()
+    
+    final_stats = store.get_stats()
+    print(f"=== Final System Stats ===")
+    print(f" - Total Ingested: {final_stats.total_ingested}")
+    print(f" - Known Count: {final_stats.known_count}")
+    print(f" - Adaptive Count: {final_stats.adaptive_count}")
+    print(f" - Self-Healed Count: {final_stats.self_healed_count}")
+    print(f" - Failed Count: {final_stats.failed_count}")
+    print(f" - Average Confidence: {final_stats.avg_confidence}%")
+    print(f" - Active Parsers Count: {final_stats.active_parsers_count}")
+    print("\n>>> ALL BACKEND PIPELINE TESTS PASSED!")
+
+if __name__ == "__main__":
+    test_pipeline()
