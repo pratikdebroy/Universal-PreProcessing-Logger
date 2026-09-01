@@ -149,14 +149,55 @@ def demo_clear():
     store.clear()
     return {"message": "Store cleared successfully", "stats": store.get_stats()}
 
-# Serve built frontend static files if available
+# ==================== SPA FRONTEND SERVING ====================
 import os
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
-if os.path.exists(dist_path):
-    app.mount("/", StaticFiles(directory=dist_path, html=True), name="static")
+# Search for the built frontend dist in all standard locations
+dist_path = None
+possible_candidates = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend", "dist")),
+    os.path.abspath(os.path.join(os.getcwd(), "..", "frontend", "dist")),
+    os.path.abspath(os.path.join(os.getcwd(), "frontend", "dist")),
+    "/app/frontend/dist",
+    "/app/dist",
+]
+
+for candidate in possible_candidates:
+    if os.path.exists(candidate) and os.path.exists(os.path.join(candidate, "index.html")):
+        dist_path = candidate
+        break
+
+if dist_path:
+    assets_dir = os.path.join(dist_path, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Allow API 404s for non-existent API routes
+        api_prefixes = ["health", "stats", "events", "logs", "parsers", "healing-reports", "demo", "api"]
+        if any(full_path.startswith(p) for p in api_prefixes):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        file_path = os.path.join(dist_path, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        index_file = os.path.join(dist_path, "index.html")
+        return FileResponse(index_file)
+else:
+    @app.get("/")
+    def root():
+        return {
+            "status": "online",
+            "message": "FastAPI is running. Frontend build not found.",
+            "docs": "/docs",
+        }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
